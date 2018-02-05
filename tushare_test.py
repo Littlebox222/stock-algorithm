@@ -4,14 +4,54 @@
 import tushare as ts
 import csv
 import matplotlib.pyplot as plt
-import numpy as np  
+import numpy as np
 import datetime
 from scipy.interpolate import spline
 
+def get_min_point( points ):
+
+    min_points = []
+
+    if len(points) < 3 :
+        return []
+
+    for i in range(1,len(points)-1) :
+        if points[i] < points[i-1] and points[i] <= points[i+1] :
+            min_points.append([i,points[i]])
+
+    return min_points;
+
+def mean_filter( points, width ):
+
+    if window_width%2 == 0:
+        print "Error: window_width 必须是奇数"
+        return []
+
+    mean_filter_output = []
+
+    if len(points) < width :
+        return []
+
+    for i in range(0,(width-1)/2) :
+        mean_filter_output.append(points[i])
+
+    for i in range((width-1)/2,len(points) - (width-1)/2) :
+        sum_value = 0.
+        for j in range(-(width-1)/2,(width-1)/2+1) :
+            sum_value += points[i+j]
+        mean_filter_output.append(sum_value/width)
+
+    for i in range(len(points)-(width-1)/2,len(points)) :
+        mean_filter_output.append(points[i])
+
+    return mean_filter_output;
+
 # 配置参数
 should_update_stock_list = False # 是否更新全部股票列表
-date_window = 30                 # 时间窗口
-calculation_type = 'mean'        # 计算类型：mean，open，close
+should_plot = True               # 是否画图
+date_window = 60                 # 时间窗口
+calculation_type = 'close'       # 计算类型：high，low，close
+window_width = 3                 # 均值滤波窗口大小
 
 # 当前时间
 current_time = datetime.datetime.now()
@@ -39,23 +79,49 @@ start_time = end_time - datetime.timedelta(days=date_window)
 #     codes = [row['code'] for row in reader]
 
 
-data = ts.get_k_data('601001', start=start_time.strftime("%Y-%m-%d"), end=end_time.strftime("%Y-%m-%d"))
+# data = ts.get_k_data('600583', start=start_time.strftime("%Y-%m-%d"), end=end_time.strftime("%Y-%m-%d"))
+data = ts.get_k_data('002027', start=start_time.strftime("%Y-%m-%d"), end=end_time.strftime("%Y-%m-%d"))
 
-if calculation_type == 'mean' :
-    point = data['open'] + (data['close'] - data['open'])/2
-elif calculation_type == 'open' :
-    point = data['open']
+if calculation_type == 'high' :
+    point = data['high']
+elif calculation_type == 'low' :
+    point = data['low']
 else :
     point = data['close']
 
+point = list(point)
+# print get_min_point(point)
+
 
 # 画图
-x = np.arange(0, len(point), 1) 
-xnew = np.linspace(x.min(),x.max(),300)
+if should_plot :
+    x = np.arange(0, len(point), 1) 
+    xnew = np.linspace(x.min(),x.max(),300)
 
-point_smooth = spline(x,point,xnew)
+    point_smooth = spline(x,point,xnew)
 
-plt.plot(point, 'ro-')
-plt.plot(xnew, point_smooth)
-plt.grid()
-plt.show()
+    plt.subplot2grid((1,4),(0,0))
+    plt.plot(point)
+    plt.grid()
+    plt.title(u"原始数据")
+
+    mean_filtered_point = mean_filter(point,window_width)
+    plt.subplot2grid((1,4),(0,1))
+    plt.plot(mean_filtered_point)
+    plt.grid()
+    plt.title(u"1次均值滤波")
+
+    mean_filtered_point = mean_filter(mean_filtered_point,window_width)
+    plt.subplot2grid((1,4),(0,2))
+    plt.plot(mean_filtered_point)
+    plt.grid()
+    plt.title(u"2次均值滤波")
+
+    mean_filtered_point = mean_filter(mean_filtered_point,window_width)
+    plt.subplot2grid((1,4),(0,3))
+    plt.plot(mean_filtered_point)
+    plt.title(u"3次均值滤波")
+
+    # plt.plot(xnew, point_smooth)
+    plt.grid()
+    plt.show()
