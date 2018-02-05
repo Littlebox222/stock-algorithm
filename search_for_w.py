@@ -78,8 +78,6 @@ start_time = end_time - datetime.timedelta(days=date_window)
 #     reader = csv.DictReader(csvfile)
 #     codes = [row['code'] for row in reader]
 
-
-# data = ts.get_k_data('600583', start=start_time.strftime("%Y-%m-%d"), end=end_time.strftime("%Y-%m-%d"))
 data = ts.get_k_data('002027', start=start_time.strftime("%Y-%m-%d"), end=end_time.strftime("%Y-%m-%d"))
 
 if calculation_type == 'high' :
@@ -90,15 +88,9 @@ else :
     point = data['close']
 
 point = list(point)
-# print get_min_point(point)
-
 
 # 画图
 if should_plot :
-    x = np.arange(0, len(point), 1) 
-    xnew = np.linspace(x.min(),x.max(),300)
-
-    point_smooth = spline(x,point,xnew)
 
     plt.subplot2grid((1,4),(0,0))
     plt.plot(point)
@@ -120,8 +112,7 @@ if should_plot :
     mean_filtered_point = mean_filter(mean_filtered_point,window_width)
     plt.subplot2grid((1,4),(0,3))
     plt.plot(mean_filtered_point)
+    plt.grid()
     plt.title(u"3次均值滤波")
 
-    # plt.plot(xnew, point_smooth)
-    plt.grid()
     plt.show()
