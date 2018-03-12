@@ -6,14 +6,22 @@ import tushare as ts
 
 class KLine():
     def __init__(self,data_value):
-        data_list = data_value.tolist()
-        self.date = data_list[0]
-        self.open = data_list[1]
-        self.close = data_list[2]
-        self.high = data_list[3]
-        self.low = data_list[4]
-        self.volume = data_list[5]
-        self.code = data_list[6]
+        self.date = ""
+        self.open = data_value.open
+        self.high = data_value.high
+        self.close = data_value.close
+        self.low = data_value.low
+        self.volume = data_value.volume
+        self.price_change = data_value.price_change
+        self.p_change = data_value.p_change
+        self.ma5 = data_value.ma5
+        self.ma10 = data_value.ma10
+        self.ma20 = data_value.ma20
+        self.v_ma5 = data_value.v_ma5
+        self.v_ma10 = data_value.v_ma10
+        self.v_ma20 = data_value.v_ma20
+        self.turnover = data_value.turnover
+        
 
     def is_up(self):
         if self.close > self.open :
@@ -34,36 +42,41 @@ class KLine():
             return 1
         return 0
 
-    def is_big_volume(self, mean_volume):
-        if self.volume > mean_volume :
+    def is_big_volume(self):
+        if self.volume > self.v_ma5 :
             return 1
         return 0
 
 def get_data():
-    data = ts.get_k_data('002049', start="2017-12-11", end="2018-03-08")
+    data = ts.get_hist_data('600511', start="2017-12-11", end="2018-03-12")
     return data
 
+IS_DEBUG = 1
 
 if __name__ == '__main__':
 
     data = get_data()
+
     k_lines = []
 
-    for i in range(0,len(data.values)) :
-        k_lines.append(KLine(data.values[i]))
-
-    sum_volume = 0
-    for i in range(0,len(k_lines)) :
-        sum_volume += k_lines[i].volume
-    mean_volume = sum_volume/len(k_lines)
+    for i in range(0,len(data.index)) :
+        k_line = KLine(data.loc[data.index[len(data.index)-1-i]])
+        k_line.date = data.index[len(data.index)-1-i]
+        k_lines.append(k_line)
 
     for i in range(0,len(k_lines)-1) :
-        if      k_lines[i].is_high_up() \
-            and k_lines[i].is_big_volume(mean_volume) \
-            and k_lines[i+1].is_star() \
-            and k_lines[i].volume > k_lines[i+1].volume \
-            and k_lines[i].close >= k_lines[i+1].close \
-            and k_lines[i].close >= k_lines[i+1].open :
-            #再加一个判断：十字星的最低点高于5日均线
+        
+        if not k_lines[i].is_high_up() :
+            if IS_DEBUG : print k_lines[i].date, "not is_high_up"
+            continue
+        if not k_lines[i].is_big_volume() :
+            if IS_DEBUG : print k_lines[i].date, "not is_big_volume"
+            continue
+        if not k_lines[i+1].is_star() :
+            if IS_DEBUG : print k_lines[i].date, "t+1 not is_star"
+            continue
+        if not k_lines[i].volume > k_lines[i+1].volume :
+            if IS_DEBUG : print k_lines[i].date, "volume not greater"
+            continue
 
-            print k_lines[i].date
+        print "------------ niubility ----------->>>", k_lines[i].date
